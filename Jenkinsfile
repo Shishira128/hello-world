@@ -40,15 +40,52 @@ pipeline {
 
         stage('Package & Archive') {
             steps {
-                sh 'mvn package -DskipTests'
-
-                archiveArtifacts(
-                    artifacts: 'target/*.jar',
-                    fingerprint: true
-                )
-
+                archiveArtifacts artifacts: 'target/*.jar',
+                                   fingerprint: true
                 echo "Artifact archived successfully"
             }
+        }
+
+        stage('Deploy to Nexus') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'nexus-credentials',
+                        usernameVariable: 'NEXUS_USERNAME',
+                        passwordVariable: 'NEXUS_PASSWORD'
+                    )
+                ]) {
+
+                    sh '''
+                        cat > nexus-settings.xml <<EOF
+<settings>
+    <servers>
+        <server>
+            <id>nexus</id>
+            <username>${NEXUS_USERNAME}</username>
+            <password>${NEXUS_PASSWORD}</password>
+        </server>
+    </servers>
+</settings>
+EOF
+
+                        mvn deploy \
+                          -s nexus-settings.xml \
+                          -DaltDeploymentRepository=nexus::default::http://localhost:8081/repository/techbuild-releases/
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully!"
+            echo "Artifact deployed to Nexus successfully!"
+        }
+
+        failure {
+            echo "Pipeline failed."
         }
     }
 }
