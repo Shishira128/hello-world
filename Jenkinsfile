@@ -20,5 +20,13 @@ pipeline {
                 sh 'mvn test'
             }
         }
+
+        stage('Quality Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube-Local') {
+                    sh 'mvn sonar:sonar'
+                }
+            }
+        }
     }
 }
