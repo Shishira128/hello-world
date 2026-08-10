@@ -8,5 +8,11 @@ pipeline {
                 echo "Source code checked out successfully"
             }
         }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
     }
 }
