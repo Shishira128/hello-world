@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        SLACK_WEBHOOK = credentials('slack-webhook')
+    }
+
     stages {
 
         stage('Checkout') {
@@ -42,6 +46,7 @@ pipeline {
             steps {
                 archiveArtifacts artifacts: 'target/*.jar',
                                  fingerprint: true
+
                 echo "Artifact archived successfully"
             }
         }
@@ -79,13 +84,28 @@ EOF
     }
 
     post {
+
         success {
             echo "Pipeline completed successfully!"
             echo "Artifact deployed to Nexus successfully!"
+
+            sh '''
+                curl -sS -X POST \
+                  -H "Content-Type: application/json" \
+                  --data '{"text":"✅ Jenkins SUCCESS: hello-world-pipeline Build #'"$BUILD_NUMBER"' completed successfully. Artifact deployed to Nexus."}' \
+                  "$SLACK_WEBHOOK"
+            '''
         }
 
         failure {
             echo "Pipeline failed."
+
+            sh '''
+                curl -sS -X POST \
+                  -H "Content-Type: application/json" \
+                  --data '{"text":"❌ Jenkins FAILURE: hello-world-pipeline Build #'"$BUILD_NUMBER"'. Please check Jenkins Console Output."}' \
+                  "$SLACK_WEBHOOK"
+            '''
         }
     }
 }
