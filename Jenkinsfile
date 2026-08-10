@@ -41,7 +41,7 @@ pipeline {
         stage('Package & Archive') {
             steps {
                 archiveArtifacts artifacts: 'target/*.jar',
-                                   fingerprint: true
+                                 fingerprint: true
                 echo "Artifact archived successfully"
             }
         }
